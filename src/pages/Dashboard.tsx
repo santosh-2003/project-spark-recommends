@@ -1,0 +1,189 @@
+
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import ProjectCard from '@/components/ProjectCard';
+import { mockProjects, Project } from '@/data/mockProjects';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { TrendingUp, BookOpen, Clock, Star } from 'lucide-react';
+
+const Dashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [recommendedProjects, setRecommendedProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    // Simulate API call for personalized recommendations
+    setTimeout(() => {
+      // TODO: connect to API for personalized recommendations
+      const shuffled = [...mockProjects].sort(() => 0.5 - Math.random());
+      setRecommendedProjects(shuffled.slice(0, 6));
+      setIsLoading(false);
+    }, 1000);
+  }, [user, navigate]);
+
+  if (!user) {
+    return null;
+  }
+
+  const stats = [
+    {
+      title: 'Projects Completed',
+      value: '5',
+      icon: <BookOpen className="w-5 h-5 text-blue-600" />,
+      change: '+2 this month'
+    },
+    {
+      title: 'Hours Learning',
+      value: '42',
+      icon: <Clock className="w-5 h-5 text-green-600" />,
+      change: '+8 this week'
+    },
+    {
+      title: 'Skills Gained',
+      value: '12',
+      icon: <Star className="w-5 h-5 text-purple-600" />,
+      change: '+3 new skills'
+    },
+    {
+      title: 'Streak',
+      value: '7 days',
+      icon: <TrendingUp className="w-5 h-5 text-orange-600" />,
+      change: 'Keep it up!'
+    }
+  ];
+
+  return (
+    <div className="min-h-screen py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome back, {user.name}! 👋
+          </h1>
+          <p className="text-gray-600">
+            Here are your personalized project recommendations based on your profile.
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => (
+            <Card key={index} className="border-0 shadow-md">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-xs text-green-600 mt-1">{stat.change}</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    {stat.icon}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="mb-8 border-0 shadow-md">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>
+              Get started with these common tasks
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/profile')}
+                className="flex items-center"
+              >
+                Update Profile
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/projects')}
+                className="flex items-center"
+              >
+                Browse All Projects
+              </Button>
+              <Button variant="outline">
+                View Learning Path
+              </Button>
+              <Button variant="outline">
+                Join Community
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recommended Projects */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Recommended for You</h2>
+              <p className="text-gray-600">Projects tailored to your skills and interests</p>
+            </div>
+            <Button variant="outline" onClick={() => navigate('/projects')}>
+              View All Projects
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <Card key={index} className="h-80 animate-pulse border-0 shadow-md">
+                  <CardContent className="p-6">
+                    <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                    <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-gray-200 rounded"></div>
+                      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : recommendedProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendedProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} />
+              ))}
+            </div>
+          ) : (
+            <Card className="text-center py-12 border-0 shadow-md">
+              <CardContent>
+                <div className="mb-4">
+                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No recommendations yet
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Complete your profile to get personalized project recommendations.
+                </p>
+                <Button onClick={() => navigate('/profile')}>
+                  Complete Profile
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
