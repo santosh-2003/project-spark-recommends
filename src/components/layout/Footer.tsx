@@ -1,15 +1,12 @@
-
 import { Link } from 'react-router-dom';
-
 const Footer = () => {
-  return (
-    <footer className="bg-gray-900 text-white">
+  return <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center mb-4">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg mr-3"></div>
-              <span className="text-xl font-bold">ProjectRec</span>
+              <span className="text-xl font-bold">BuildBuddy </span>
             </div>
             <p className="text-gray-400 max-w-md">
               Discover and get recommendations for projects that match your skills, interests, and academic background.
@@ -40,13 +37,9 @@ const Footer = () => {
         </div>
         
         <div className="mt-8 pt-8 border-t border-gray-800">
-          <p className="text-center text-gray-400">
-            © 2024 ProjectRec. All rights reserved.
-          </p>
+          <p className="text-center text-gray-400">© 2025 BuildBuddy. All rights reserved.</p>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
