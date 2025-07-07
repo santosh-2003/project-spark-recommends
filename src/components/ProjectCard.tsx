@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/data/mockProjects';
 import { Clock, User, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ProjectCardProps {
   project: Project;
@@ -11,6 +12,8 @@ interface ProjectCardProps {
 }
 
 const ProjectCard = ({ project, showDetails = false }: ProjectCardProps) => {
+  const navigate = useNavigate();
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Beginner':
@@ -22,6 +25,10 @@ const ProjectCard = ({ project, showDetails = false }: ProjectCardProps) => {
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const handleViewDetails = () => {
+    navigate(`/projects/${project.id}`);
   };
 
   return (
@@ -92,7 +99,7 @@ const ProjectCard = ({ project, showDetails = false }: ProjectCardProps) => {
         )}
         
         <div className="pt-2">
-          <Button className="w-full">
+          <Button className="w-full" onClick={handleViewDetails}>
             View Details
           </Button>
         </div>

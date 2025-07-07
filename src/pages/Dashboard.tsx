@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ProjectCard from '@/components/ProjectCard';
-import { mockProjects, Project } from '@/data/mockProjects';
+import { Project } from '@/data/mockProjects';
+import { getRecommendedProjects } from '@/utils/recommendationEngine';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +24,8 @@ const Dashboard = () => {
 
     // Simulate API call for personalized recommendations
     setTimeout(() => {
-      // TODO: connect to API for personalized recommendations
-      const shuffled = [...mockProjects].sort(() => 0.5 - Math.random());
-      setRecommendedProjects(shuffled.slice(0, 6));
+      const recommendations = getRecommendedProjects(user, 6);
+      setRecommendedProjects(recommendations);
       setIsLoading(false);
     }, 1000);
   }, [user, navigate]);
@@ -70,9 +70,43 @@ const Dashboard = () => {
             Welcome back, {user.name}! 👋
           </h1>
           <p className="text-gray-600">
-            Here are your personalized project recommendations based on your profile.
+            Here are your personalized project recommendations based on your interests and skills.
           </p>
+          {user.interests && user.interests.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span className="text-sm text-gray-500">Your interests:</span>
+              {user.interests.slice(0, 3).map((interest, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {interest}
+                </Badge>
+              ))}
+              {user.interests.length > 3 && (
+                <Badge variant="secondary" className="text-xs">
+                  +{user.interests.length - 3} more
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Show message if user hasn't completed profile */}
+        {(!user.interests || user.interests.length === 0) && (
+          <Card className="mb-8 border-l-4 border-l-blue-500 border-0 shadow-md">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-gray-900">Complete your profile for better recommendations</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Add your interests and skills to get personalized project recommendations.
+                  </p>
+                </div>
+                <Button onClick={() => navigate('/profile')}>
+                  Complete Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -132,8 +166,15 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Recommended for You</h2>
-              <p className="text-gray-600">Projects tailored to your skills and interests</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {user.interests && user.interests.length > 0 ? 'Recommended for You' : 'Popular Projects'}
+              </h2>
+              <p className="text-gray-600">
+                {user.interests && user.interests.length > 0 ? 
+                  'Projects tailored to your skills and interests' : 
+                  'Complete your profile to get personalized recommendations'
+                }
+              </p>
             </div>
             <Button variant="outline" onClick={() => navigate('/projects')}>
               View All Projects
