@@ -1,881 +1,349 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { mockProjects, Project, getDomains, getDifficulties } from '@/data/mockProjects';
-import { Plus, Edit, Trash2, Save, X, Shield, Users, BarChart3, Eye, Ban, CheckCircle } from 'lucide-react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-  interests: string[];
-  skills: string[];
-  loginCount: number;
-  lastLogin: string;
-  isActive: boolean;
-  registeredDate: string;
-}
-
-// Mock users data
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    isAdmin: false,
-    interests: ['Web Development', 'AI/ML'],
-    skills: ['JavaScript', 'React', 'Python'],
-    loginCount: 25,
-    lastLogin: '2024-01-12',
-    isActive: true,
-    registeredDate: '2023-12-01'
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    isAdmin: false,
-    interests: ['Mobile Development', 'UI/UX'],
-    skills: ['React Native', 'Flutter', 'Figma'],
-    loginCount: 15,
-    lastLogin: '2024-01-10',
-    isActive: true,
-    registeredDate: '2023-11-15'
-  },
-  {
-    id: '3',
-    name: 'Mike Johnson',
-    email: 'mike@example.com',
-    isAdmin: false,
-    interests: ['Data Science'],
-    skills: ['Python', 'SQL', 'Pandas'],
-    loginCount: 8,
-    lastLogin: '2024-01-05',
-    isActive: false,
-    registeredDate: '2023-10-20'
-  }
-];
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/contexts/AuthContext';
+import { mockProjects } from '@/data/mockProjects';
+import { Users, BookOpen, BarChart3, Settings, UserCheck, UserX, Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [isAddingProject, setIsAddingProject] = useState(false);
-  const [editingProject, setEditingProject] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState('overview');
-  const [formData, setFormData] = useState<Omit<Project, 'id'>>({
-    title: '',
-    description: '',
-    domain: '',
-    techStack: [],
-    difficulty: 'Beginner',
-    tags: [],
-    estimatedTime: '',
-    prerequisites: [],
-    learningOutcomes: []
-  });
-  
-  const [newTech, setNewTech] = useState('');
-  const [newTag, setNewTag] = useState('');
-  const [newPrereq, setNewPrereq] = useState('');
-  const [newOutcome, setNewOutcome] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    if (!user.isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access the admin panel.",
-        variant: "destructive",
-      });
-      navigate('/dashboard');
-      return;
-    }
-  }, [user, navigate, toast]);
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      domain: '',
-      techStack: [],
-      difficulty: 'Beginner',
-      tags: [],
-      estimatedTime: '',
-      prerequisites: [],
-      learningOutcomes: []
-    });
-    setNewTech('');
-    setNewTag('');
-    setNewPrereq('');
-    setNewOutcome('');
-    setIsAddingProject(false);
-    setEditingProject(null);
-  };
-
-  const addListItem = (type: 'techStack' | 'tags' | 'prerequisites' | 'learningOutcomes', value: string, setValue: (value: string) => void) => {
-    if (value.trim() && !formData[type].includes(value.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        [type]: [...prev[type], value.trim()]
-      }));
-      setValue('');
-    }
-  };
-
-  const removeListItem = (type: 'techStack' | 'tags' | 'prerequisites' | 'learningOutcomes', index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.title || !formData.description || !formData.domain) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (editingProject) {
-      setProjects(prev => prev.map(project => 
-        project.id === editingProject 
-          ? { ...formData, id: editingProject }
-          : project
-      ));
-      toast({
-        title: "Success",
-        description: "Project updated successfully.",
-      });
-    } else {
-      const newProject: Project = {
-        ...formData,
-        id: Date.now().toString()
-      };
-      setProjects(prev => [...prev, newProject]);
-      toast({
-        title: "Success",
-        description: "Project added successfully.",
-      });
-    }
-    
-    resetForm();
-  };
-
-  const handleEdit = (project: Project) => {
-    setFormData({
-      title: project.title,
-      description: project.description,
-      domain: project.domain,
-      techStack: [...project.techStack],
-      difficulty: project.difficulty,
-      tags: [...project.tags],
-      estimatedTime: project.estimatedTime,
-      prerequisites: [...project.prerequisites],
-      learningOutcomes: [...project.learningOutcomes]
-    });
-    setEditingProject(project.id);
-    setIsAddingProject(true);
-  };
-
-  const handleDelete = (projectId: string) => {
-    setProjects(prev => prev.filter(project => project.id !== projectId));
-    toast({
-      title: "Success",
-      description: "Project deleted successfully.",
-    });
-  };
-
-  const toggleUserStatus = (userId: string) => {
-    setUsers(prev => prev.map(u => 
-      u.id === userId ? { ...u, isActive: !u.isActive } : u
-    ));
-    const targetUser = users.find(u => u.id === userId);
-    toast({
-      title: "Success",
-      description: `User ${targetUser?.isActive ? 'deactivated' : 'activated'} successfully.`,
-    });
-  };
-
-  const deleteUser = (userId: string) => {
-    setUsers(prev => prev.filter(u => u.id !== userId));
-    toast({
-      title: "Success",
-      description: "User deleted successfully.",
-    });
-  };
-
-  if (!user || !user.isAdmin) {
-    return null;
-  }
+  // Mock data for demonstration
+  const mockUsers = [
+    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Student', status: 'Active', lastLogin: '2024-01-15', projectsCompleted: 5 },
+    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'Student', status: 'Active', lastLogin: '2024-01-14', projectsCompleted: 3 },
+    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', role: 'Student', status: 'Inactive', lastLogin: '2024-01-10', projectsCompleted: 8 },
+    { id: 4, name: 'Sarah Wilson', email: 'sarah@example.com', role: 'Student', status: 'Active', lastLogin: '2024-01-15', projectsCompleted: 2 },
+  ];
 
   const stats = {
-    totalUsers: users.length,
-    activeUsers: users.filter(u => u.isActive).length,
-    totalProjects: projects.length,
-    totalLogins: users.reduce((sum, u) => sum + u.loginCount, 0)
+    totalUsers: mockUsers.length,
+    activeUsers: mockUsers.filter(u => u.status === 'Active').length,
+    totalProjects: mockProjects.length,
+    completedProjects: mockUsers.reduce((sum, user) => sum + user.projectsCompleted, 0)
   };
 
+  if (!user?.isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+          <Button onClick={() => navigate('/')}>Go to Home</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredUsers = mockUsers.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center mb-2">
-            <Shield className="w-8 h-8 text-blue-600 mr-3" />
-            <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
-          </div>
-          <p className="text-gray-600">
-            Manage users, projects, and system analytics.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">BuildBuddy Admin Panel</h1>
+          <p className="text-gray-600 mt-2">Manage users, projects, and system settings</p>
         </div>
 
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Users</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
-                    </div>
-                    <Users className="w-8 h-8 text-blue-600" />
-                  </div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                  <p className="text-xs text-muted-foreground">+12% from last month</p>
                 </CardContent>
               </Card>
+
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Active Users</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                  <UserCheck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.activeUsers}</div>
+                  <p className="text-xs text-muted-foreground">+8% from last month</p>
                 </CardContent>
               </Card>
+
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Projects</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
-                    </div>
-                    <BarChart3 className="w-8 h-8 text-purple-600" />
-                  </div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalProjects}</div>
+                  <p className="text-xs text-muted-foreground">+3 new this week</p>
                 </CardContent>
               </Card>
+
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Logins</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalLogins}</p>
-                    </div>
-                    <Eye className="w-8 h-8 text-orange-600" />
-                  </div>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Completed Projects</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.completedProjects}</div>
+                  <p className="text-xs text-muted-foreground">+15% completion rate</p>
                 </CardContent>
               </Card>
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent User Activity</CardTitle>
+                  <CardDescription>Latest user logins and registrations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {mockUsers.slice(0, 3).map((user) => (
+                      <div key={user.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-sm text-gray-500">Last login: {user.lastLogin}</p>
+                        </div>
+                        <Badge variant={user.status === 'Active' ? 'default' : 'secondary'}>
+                          {user.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Popular Projects</CardTitle>
+                  <CardDescription>Most accessed projects this month</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {mockProjects.slice(0, 3).map((project) => (
+                      <div key={project.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{project.title}</p>
+                          <p className="text-sm text-gray-500">{project.domain}</p>
+                        </div>
+                        <Badge variant="outline">{project.difficulty}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest user activities and system events</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>User Management</CardTitle>
+                    <CardDescription>Manage registered users and their permissions</CardDescription>
+                  </div>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add User
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {users.slice(0, 5).map((user) => (
-                    <div key={user.id} className="flex items-center justify-between border-b pb-2">
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-gray-600">Last login: {user.lastLogin}</p>
-                      </div>
-                      <Badge variant={user.isActive ? "default" : "secondary"}>
-                        {user.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-4">User</th>
+                        <th className="text-left p-4">Email</th>
+                        <th className="text-left p-4">Role</th>
+                        <th className="text-left p-4">Status</th>
+                        <th className="text-left p-4">Projects</th>
+                        <th className="text-left p-4">Last Login</th>
+                        <th className="text-left p-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map((user) => (
+                        <tr key={user.id} className="border-b hover:bg-gray-50">
+                          <td className="p-4">
+                            <div className="font-medium">{user.name}</div>
+                          </td>
+                          <td className="p-4 text-gray-600">{user.email}</td>
+                          <td className="p-4">
+                            <Badge variant="outline">{user.role}</Badge>
+                          </td>
+                          <td className="p-4">
+                            <Badge variant={user.status === 'Active' ? 'default' : 'secondary'}>
+                              {user.status}
+                            </Badge>
+                          </td>
+                          <td className="p-4">{user.projectsCompleted}</td>
+                          <td className="p-4 text-gray-600">{user.lastLogin}</td>
+                          <td className="p-4">
+                            <div className="flex space-x-2">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="projects" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Project Management</CardTitle>
+                    <CardDescription>Manage available projects and their details</CardDescription>
+                  </div>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Project
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {mockProjects.slice(0, 6).map((project) => (
+                    <Card key={project.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <Badge variant="outline">{project.difficulty}</Badge>
+                          <div className="flex space-x-1">
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <CardTitle className="text-lg">{project.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600 mb-3">{project.description}</p>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">{project.domain}</span>
+                          <span className="text-gray-500">{project.estimatedTime}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Users Tab */}
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
-                  Manage all registered users ({users.length} total)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Interests</TableHead>
-                        <TableHead>Skills</TableHead>
-                        <TableHead>Logins</TableHead>
-                        <TableHead>Last Login</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{user.name}</p>
-                              <p className="text-sm text-gray-600">{user.email}</p>
-                              <p className="text-xs text-gray-500">Registered: {user.registeredDate}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1 max-w-xs">
-                              {user.interests.slice(0, 2).map((interest, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {interest}
-                                </Badge>
-                              ))}
-                              {user.interests.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{user.interests.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1 max-w-xs">
-                              {user.skills.slice(0, 2).map((skill, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">
-                                  {skill}
-                                </Badge>
-                              ))}
-                              {user.skills.length > 2 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{user.skills.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{user.loginCount}</TableCell>
-                          <TableCell>{user.lastLogin}</TableCell>
-                          <TableCell>
-                            <Badge variant={user.isActive ? "default" : "secondary"}>
-                              {user.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => toggleUserStatus(user.id)}
-                                className={user.isActive ? "text-red-600 hover:text-red-700" : "text-green-600 hover:text-green-700"}
-                              >
-                                {user.isActive ? <Ban className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => deleteUser(user.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Projects Tab */}
-          <TabsContent value="projects" className="space-y-6">
-            {/* Add/Edit Project Form */}
-            {isAddingProject && (
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>
-                        {editingProject ? 'Edit Project' : 'Add New Project'}
-                      </CardTitle>
-                      <CardDescription>
-                        {editingProject ? 'Update project information' : 'Create a new project for the platform'}
-                      </CardDescription>
-                    </div>
-                    <Button variant="outline" onClick={resetForm}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Basic Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="title">Project Title *</Label>
-                        <Input
-                          id="title"
-                          value={formData.title}
-                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                          placeholder="Enter project title"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="estimatedTime">Estimated Time *</Label>
-                        <Input
-                          id="estimatedTime"
-                          value={formData.estimatedTime}
-                          onChange={(e) => setFormData(prev => ({ ...prev, estimatedTime: e.target.value }))}
-                          placeholder="e.g., 4-6 weeks"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="description">Description *</Label>
-                      <Textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Describe the project..."
-                        rows={3}
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="domain">Domain *</Label>
-                        <Select
-                          value={formData.domain}
-                          onValueChange={(value) => setFormData(prev => ({ ...prev, domain: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select domain" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getDomains().map(domain => (
-                              <SelectItem key={domain} value={domain}>{domain}</SelectItem>
-                            ))}
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="difficulty">Difficulty *</Label>
-                        <Select
-                          value={formData.difficulty}
-                          onValueChange={(value) => setFormData(prev => ({ ...prev, difficulty: value as Project['difficulty'] }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select difficulty" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getDifficulties().map(difficulty => (
-                              <SelectItem key={difficulty} value={difficulty}>{difficulty}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Tech Stack */}
-                    <div>
-                      <Label>Tech Stack</Label>
-                      <div className="flex gap-2 mb-2">
-                        <Input
-                          value={newTech}
-                          onChange={(e) => setNewTech(e.target.value)}
-                          placeholder="Add technology (e.g., React)"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addListItem('techStack', newTech, setNewTech);
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => addListItem('techStack', newTech, setNewTech)}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {formData.techStack.map((tech, index) => (
-                          <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                            {tech}
-                            <X
-                              className="w-3 h-3 cursor-pointer"
-                              onClick={() => removeListItem('techStack', index)}
-                            />
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Tags */}
-                    <div>
-                      <Label>Tags</Label>
-                      <div className="flex gap-2 mb-2">
-                        <Input
-                          value={newTag}
-                          onChange={(e) => setNewTag(e.target.value)}
-                          placeholder="Add tag (e.g., full-stack)"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addListItem('tags', newTag, setNewTag);
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => addListItem('tags', newTag, setNewTag)}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {formData.tags.map((tag, index) => (
-                          <Badge key={index} variant="outline" className="flex items-center gap-1">
-                            {tag}
-                            <X
-                              className="w-3 h-3 cursor-pointer"
-                              onClick={() => removeListItem('tags', index)}
-                            />
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Prerequisites */}
-                    <div>
-                      <Label>Prerequisites</Label>
-                      <div className="flex gap-2 mb-2">
-                        <Input
-                          value={newPrereq}
-                          onChange={(e) => setNewPrereq(e.target.value)}
-                          placeholder="Add prerequisite"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addListItem('prerequisites', newPrereq, setNewPrereq);
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => addListItem('prerequisites', newPrereq, setNewPrereq)}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="space-y-1">
-                        {formData.prerequisites.map((prereq, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                            <span className="text-sm">{prereq}</span>
-                            <X
-                              className="w-4 h-4 cursor-pointer text-gray-500 hover:text-red-500"
-                              onClick={() => removeListItem('prerequisites', index)}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Learning Outcomes */}
-                    <div>
-                      <Label>Learning Outcomes</Label>
-                      <div className="flex gap-2 mb-2">
-                        <Input
-                          value={newOutcome}
-                          onChange={(e) => setNewOutcome(e.target.value)}
-                          placeholder="Add learning outcome"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addListItem('learningOutcomes', newOutcome, setNewOutcome);
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => addListItem('learningOutcomes', newOutcome, setNewOutcome)}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="space-y-1">
-                        {formData.learningOutcomes.map((outcome, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                            <span className="text-sm">{outcome}</span>
-                            <X
-                              className="w-4 h-4 cursor-pointer text-gray-500 hover:text-red-500"
-                              onClick={() => removeListItem('learningOutcomes', index)}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-3">
-                      <Button type="button" variant="outline" onClick={resetForm}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" className="bg-gradient-to-r from-blue-600 to-purple-600">
-                        <Save className="w-4 h-4 mr-2" />
-                        {editingProject ? 'Update Project' : 'Add Project'}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Projects Management */}
-            <Card className="border-0 shadow-md">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Projects Management</CardTitle>
-                    <CardDescription>
-                      Manage all projects in the system ({projects.length} total)
-                    </CardDescription>
-                  </div>
-                  {!isAddingProject && (
-                    <Button onClick={() => setIsAddingProject(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Project
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Domain</TableHead>
-                        <TableHead>Difficulty</TableHead>
-                        <TableHead>Tech Stack</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {projects.map((project) => (
-                        <TableRow key={project.id}>
-                          <TableCell className="font-medium">
-                            <div className="max-w-xs">
-                              <p className="truncate">{project.title}</p>
-                              <p className="text-xs text-gray-500 truncate">{project.description}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{project.domain}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              className={
-                                project.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
-                                project.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }
-                            >
-                              {project.difficulty}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1 max-w-xs">
-                              {project.techStack.slice(0, 2).map((tech, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">
-                                  {tech}
-                                </Badge>
-                              ))}
-                              {project.techStack.length > 2 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{project.techStack.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">{project.estimatedTime}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end space-x-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEdit(project)}
-                              >
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDelete(project.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics">
+          <TabsContent value="settings" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>User Engagement</CardTitle>
-                  <CardDescription>User activity and engagement metrics</CardDescription>
+                  <CardTitle>System Settings</CardTitle>
+                  <CardDescription>Configure BuildBuddy system preferences</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span>Average Logins per User</span>
-                      <span className="font-bold">{Math.round(stats.totalLogins / stats.totalUsers)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Active User Rate</span>
-                      <span className="font-bold">{Math.round((stats.activeUsers / stats.totalUsers) * 100)}%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Projects per Domain</span>
-                      <span className="font-bold">{Math.round(stats.totalProjects / getDomains().length)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Top Skills</CardTitle>
-                  <CardDescription>Most popular skills among users</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    {['JavaScript', 'React', 'Python', 'Node.js', 'SQL'].map((skill, index) => (
-                      <div key={skill} className="flex justify-between items-center">
-                        <span>{skill}</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${100 - (index * 15)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-600">{100 - (index * 15)}%</span>
-                        </div>
-                      </div>
-                    ))}
+                    <Label htmlFor="siteName">Site Name</Label>
+                    <Input id="siteName" defaultValue="BuildBuddy" />
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Popular Domains</CardTitle>
-                  <CardDescription>Most popular project domains</CardDescription>
-                </CardHeader>
-                <CardContent>
                   <div className="space-y-2">
-                    {getDomains().slice(0, 5).map((domain, index) => (
-                      <div key={domain} className="flex justify-between items-center">
-                        <span>{domain}</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-purple-600 h-2 rounded-full" 
-                              style={{ width: `${90 - (index * 10)}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-600">{90 - (index * 10)}%</span>
-                        </div>
-                      </div>
-                    ))}
+                    <Label htmlFor="siteDescription">Site Description</Label>
+                    <Textarea id="siteDescription" defaultValue="Discover personalized project recommendations based on your skills, interests, and academic background." />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxFreeProjects">Max Free Projects</Label>
+                    <Input id="maxFreeProjects" type="number" defaultValue="4" />
+                  </div>
+                  <Button>Save Settings</Button>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>System Health</CardTitle>
-                  <CardDescription>Overall system status and metrics</CardDescription>
+                  <CardTitle>User Permissions</CardTitle>
+                  <CardDescription>Configure default user permissions</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span>System Status</span>
-                      <Badge className="bg-green-100 text-green-800">Healthy</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Database Status</span>
-                      <Badge className="bg-green-100 text-green-800">Connected</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Last Backup</span>
-                      <span className="text-sm text-gray-600">2 hours ago</span>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultRole">Default User Role</Label>
+                    <Select defaultValue="student">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="instructor">Instructor</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Registration Settings</Label>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" defaultChecked />
+                        <span className="text-sm">Allow user registration</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" />
+                        <span className="text-sm">Require email verification</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input type="checkbox" />
+                        <span className="text-sm">Auto-approve new users</span>
+                      </label>
                     </div>
                   </div>
+                  <Button>Update Permissions</Button>
                 </CardContent>
               </Card>
             </div>
