@@ -10,7 +10,11 @@ const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
+  // Find the specific project by ID
   const project = mockProjects.find(p => p.id === id);
+  
+  console.log('Project ID from URL:', id);
+  console.log('Found project:', project);
   
   if (!project) {
     return (
@@ -19,7 +23,8 @@ const ProjectDetails = () => {
           <Card className="text-center py-12 border-0 shadow-md">
             <CardContent>
               <h1 className="text-2xl font-bold text-gray-900 mb-4">Project Not Found</h1>
-              <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
+              <p className="text-gray-600 mb-4">The project you're looking for doesn't exist or may have been removed.</p>
+              <p className="text-sm text-gray-500 mb-4">Project ID: {id}</p>
               <Button onClick={() => navigate('/projects')}>
                 Back to Projects
               </Button>
@@ -56,7 +61,7 @@ const ProjectDetails = () => {
           Back to Projects
         </Button>
 
-        {/* Project Header */}
+        {/* Project Header - Show specific project data */}
         <Card className="mb-8 border-0 shadow-md">
           <CardHeader>
             <div className="flex justify-between items-start mb-4">
@@ -86,29 +91,31 @@ const ProjectDetails = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <BookOpen className="w-5 h-5 mr-2" />
-                  How to Complete This Project
+                  How to Complete "{project.title}"
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Step-by-Step Approach:</h4>
+                  <h4 className="font-semibold mb-2">Step-by-Step Approach for {project.title}:</h4>
                   <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                    <li>Set up your development environment with the required tech stack</li>
-                    <li>Create the basic project structure and components</li>
-                    <li>Implement core functionality following the project requirements</li>
+                    <li>Set up your development environment with {project.techStack.join(', ')}</li>
+                    <li>Create the basic project structure following {project.domain} best practices</li>
+                    <li>Implement core functionality as described: "{project.description}"</li>
                     <li>Add styling and responsive design elements</li>
-                    <li>Test your application thoroughly</li>
-                    <li>Deploy and document your project</li>
+                    <li>Test your {project.title} application thoroughly</li>
+                    <li>Deploy and document your {project.title} project</li>
                   </ol>
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold mb-2">Recommended Resources:</h4>
+                  <h4 className="font-semibold mb-2">Recommended Resources for {project.title}:</h4>
                   <ul className="list-disc list-inside space-y-1 text-gray-700">
-                    <li>Official documentation for each technology in the tech stack</li>
-                    <li>Online tutorials and video courses</li>
-                    <li>GitHub repositories with similar projects for reference</li>
-                    <li>Community forums and developer communities</li>
+                    {project.techStack.map((tech, index) => (
+                      <li key={index}>Official {tech} documentation and tutorials</li>
+                    ))}
+                    <li>{project.domain} specific best practices and patterns</li>
+                    <li>GitHub repositories with similar {project.title} projects for reference</li>
+                    <li>Community forums and developer communities for {project.domain}</li>
                   </ul>
                 </div>
               </CardContent>
@@ -152,12 +159,11 @@ const ProjectDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Learning Outcomes */}
             <Card className="border-0 shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Lightbulb className="w-5 h-5 mr-2" />
-                  What You'll Learn
+                  What You'll Learn from {project.title}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -228,7 +234,7 @@ const ProjectDetails = () => {
             <Card className="border-0 shadow-md">
               <CardContent className="pt-6">
                 <Button className="w-full" size="lg">
-                  Start This Project
+                  Start {project.title}
                 </Button>
                 <p className="text-xs text-gray-500 text-center mt-2">
                   Save to your learning path

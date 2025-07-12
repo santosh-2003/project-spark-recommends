@@ -1,5 +1,5 @@
-
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ProjectCard from '@/components/ProjectCard';
 import { mockProjects, getDomains, getTechStacks, getDifficulties } from '@/data/mockProjects';
-import { Search, Filter, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Search, Filter, X, Lock } from 'lucide-react';
 
 const AllProjects = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
@@ -35,9 +38,11 @@ const AllProjects = () => {
     });
   }, [searchTerm, selectedDomain, selectedDifficulty, selectedTechStack]);
 
-  const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
+  // Limit projects for non-authenticated users
+  const displayProjects = user ? filteredProjects : filteredProjects.slice(0, 4);
+  const totalPages = Math.ceil(displayProjects.length / projectsPerPage);
   const startIndex = (currentPage - 1) * projectsPerPage;
-  const paginatedProjects = filteredProjects.slice(startIndex, startIndex + projectsPerPage);
+  const paginatedProjects = displayProjects.slice(startIndex, startIndex + projectsPerPage);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -49,6 +54,10 @@ const AllProjects = () => {
 
   const hasActiveFilters = searchTerm || selectedDomain !== 'all' || selectedDifficulty !== 'all' || selectedTechStack !== 'all';
 
+  const handleLoginPrompt = () => {
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,9 +65,36 @@ const AllProjects = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">All Projects</h1>
           <p className="text-gray-600">
-            Discover {mockProjects.length} projects across various domains and difficulty levels.
+            Discover {user ? mockProjects.length : '4 free'} projects across various domains and difficulty levels.
+            {!user && (
+              <span className="text-blue-600 font-medium ml-1">
+                Login to see all {mockProjects.length} projects!
+              </span>
+            )}
           </p>
         </div>
+
+        {/* Free user limitation notice */}
+        {!user && (
+          <Card className="mb-8 border-l-4 border-l-blue-500 border-0 shadow-md">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Lock className="w-5 h-5 mr-3 text-blue-600" />
+                  <div>
+                    <h3 className="font-medium text-gray-900">Limited Access</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      You can view 4 projects for free. Login to access all {mockProjects.length} projects and get personalized recommendations.
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={handleLoginPrompt}>
+                  Login Now
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Filters */}
         <Card className="mb-8 border-0 shadow-md">
@@ -148,7 +184,8 @@ const AllProjects = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <p className="text-gray-600">
-              Showing {paginatedProjects.length} of {filteredProjects.length} projects
+              Showing {paginatedProjects.length} of {displayProjects.length} projects
+              {!user && ` (${mockProjects.length - 4} more available after login)`}
             </p>
             {hasActiveFilters && (
               <div className="flex flex-wrap gap-2">
@@ -179,11 +216,33 @@ const AllProjects = () => {
 
         {/* Projects Grid */}
         {paginatedProjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {paginatedProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} showDetails />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {paginatedProjects.map((project) => (
+                <ProjectCard key={project.id} project={project} showDetails />
+              ))}
+            </div>
+            
+            {/* Show more button for non-authenticated users */}
+            {!user && filteredProjects.length > 4 && (
+              <div className="text-center mb-8">
+                <Card className="inline-block border-0 shadow-md">
+                  <CardContent className="p-6">
+                    <Lock className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {filteredProjects.length - 4} More Projects Available
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Login to access all projects and get personalized recommendations based on your interests.
+                    </p>
+                    <Button onClick={handleLoginPrompt} size="lg">
+                      Login to See More
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </>
         ) : (
           <Card className="text-center py-12 border-0 shadow-md">
             <CardContent>
@@ -203,8 +262,8 @@ const AllProjects = () => {
           </Card>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
+        {/* Pagination - only show if user is authenticated */}
+        {user && totalPages > 1 && (
           <div className="flex justify-center items-center space-x-2">
             <Button
               variant="outline"
