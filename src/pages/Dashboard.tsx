@@ -8,13 +8,20 @@ import { getRecommendedProjects } from '@/utils/recommendationEngine';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, BookOpen, Clock, Star } from 'lucide-react';
+import { TrendingUp, BookOpen, Clock, Star, Users, MapPin } from 'lucide-react';
+import CompletedProjects from '@/components/dashboard/CompletedProjects';
+import LearningHours from '@/components/dashboard/LearningHours';
+import SkillsTree from '@/components/dashboard/SkillsTree';
+import StreakChart from '@/components/dashboard/StreakChart';
+import LearningPath from '@/components/dashboard/LearningPath';
+import CommunityLinks from '@/components/dashboard/CommunityLinks';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [recommendedProjects, setRecommendedProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeView, setActiveView] = useState<'dashboard' | 'projects' | 'hours' | 'skills' | 'streak' | 'learning-path' | 'community'>('dashboard');
 
   useEffect(() => {
     if (!user) {
@@ -39,27 +46,92 @@ const Dashboard = () => {
       title: 'Projects Completed',
       value: '5',
       icon: <BookOpen className="w-5 h-5 text-blue-600" />,
-      change: '+2 this month'
+      change: '+2 this month',
+      action: () => setActiveView('projects')
     },
     {
       title: 'Hours Learning',
       value: '42',
       icon: <Clock className="w-5 h-5 text-green-600" />,
-      change: '+8 this week'
+      change: '+8 this week',
+      action: () => setActiveView('hours')
     },
     {
       title: 'Skills Gained',
       value: '12',
       icon: <Star className="w-5 h-5 text-purple-600" />,
-      change: '+3 new skills'
+      change: '+3 new skills',
+      action: () => setActiveView('skills')
     },
     {
       title: 'Streak',
       value: '7 days',
       icon: <TrendingUp className="w-5 h-5 text-orange-600" />,
-      change: 'Keep it up!'
+      change: 'Keep it up!',
+      action: () => setActiveView('streak')
     }
   ];
+
+  // Render different views based on activeView
+  if (activeView === 'projects') {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <CompletedProjects onClose={() => setActiveView('dashboard')} />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeView === 'hours') {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <LearningHours onClose={() => setActiveView('dashboard')} />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeView === 'skills') {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SkillsTree onClose={() => setActiveView('dashboard')} />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeView === 'streak') {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <StreakChart onClose={() => setActiveView('dashboard')} />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeView === 'learning-path') {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <LearningPath onClose={() => setActiveView('dashboard')} />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeView === 'community') {
+    return (
+      <div className="min-h-screen py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <CommunityLinks onClose={() => setActiveView('dashboard')} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-8">
@@ -111,7 +183,11 @@ const Dashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
-            <Card key={index} className="border-0 shadow-md">
+            <Card 
+              key={index} 
+              className="border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={stat.action}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -152,10 +228,20 @@ const Dashboard = () => {
               >
                 Browse All Projects
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => setActiveView('learning-path')}
+                className="flex items-center"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
                 View Learning Path
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => setActiveView('community')}
+                className="flex items-center"
+              >
+                <Users className="w-4 h-4 mr-2" />
                 Join Community
               </Button>
             </div>
